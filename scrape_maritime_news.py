@@ -114,13 +114,15 @@ class MaritimeNewsScraper:
 
     def create_article_id(self, article):
         """Create unique ID for article based on title and URL"""
-        content = f"{article.get('title', '')}{article.get('url', '')}"
+        title = article.get('title') or ''
+        url = article.get('url') or ''
+        content = f"{title}{url}"
         return hashlib.md5(content.encode('utf-8')).hexdigest()
 
     def determine_country(self, article):
         """Determine geographic focus from article content"""
-        title = article.get('title', '').lower()
-        description = article.get('description', '').lower()
+        title = (article.get('title') or '').lower()
+        description = (article.get('description') or '').lower()
         content = title + ' ' + description
         
         # Country/region keywords for shipping markets
@@ -155,9 +157,9 @@ class MaritimeNewsScraper:
 
     def determine_article_type(self, article):
         """Determine article type from title and source"""
-        title = article.get('title', '').lower()
-        source = article.get('source', {}).get('name', '').lower()
-        description = article.get('description', '').lower()
+        title = (article.get('title') or '').lower()
+        source = (article.get('source', {}).get('name') or '').lower()
+        description = (article.get('description') or '').lower()
         
         # Opinion/analysis indicators
         opinion_indicators = ['opinion', 'comment', 'analysis', 'outlook', 'view', 'perspective', 
@@ -192,13 +194,13 @@ class MaritimeNewsScraper:
         """Process article to match RSS feed structure"""
         processed = {
             'article_id': self.create_article_id(article),
-            'title': article.get('title', ''),
-            'link': article.get('url', ''),
-            'creator': article.get('author', ''),
-            'pubdate': article.get('publishedAt', ''),
+            'title': article.get('title') or '',
+            'link': article.get('url') or '',
+            'creator': article.get('author') or '',
+            'pubdate': article.get('publishedAt') or '',
             'category': keyword,
-            'description': article.get('description', ''),
-            'source': article.get('source', {}).get('name', ''),
+            'description': article.get('description') or '',
+            'source': (article.get('source') or {}).get('name') or '',
             'country': self.determine_country(article),
             'article_type': self.determine_article_type(article),
             'scrape_timestamp': datetime.utcnow().isoformat() + 'Z'
