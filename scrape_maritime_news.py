@@ -196,7 +196,7 @@ class MaritimeNewsScraper:
             'link': article.get('url', ''),
             'creator': article.get('author', ''),
             'pubdate': article.get('publishedAt', ''),
-            'category': keyword,  # Use search keyword as category
+            'category': keyword,
             'description': article.get('description', ''),
             'source': article.get('source', {}).get('name', ''),
             'country': self.determine_country(article),
@@ -204,7 +204,8 @@ class MaritimeNewsScraper:
             'scrape_timestamp': datetime.utcnow().isoformat() + 'Z'
         }
         return processed
-        """Fetch news articles from NewsAPI"""
+
+    def fetch_news(self, query, from_date, to_date, page_size=100):
         """Fetch news articles from NewsAPI"""
         params = {
             'q': query,
@@ -217,16 +218,6 @@ class MaritimeNewsScraper:
         }
         
         try:
-            'q': query,
-            'from': from_date,
-            'to': to_date,
-            'sortBy': 'publishedAt',
-            'pageSize': page_size,
-            'apiKey': self.api_key,
-            'language': 'en'
-        }
-        
-    def fetch_news(self, query, from_date, to_date, page_size=100):
             response = requests.get(f"{self.base_url}/everything", params=params)
             response.raise_for_status()
             return response.json()
