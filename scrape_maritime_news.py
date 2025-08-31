@@ -106,18 +106,87 @@ class MaritimeNewsScraper:
             "Baltic Forward Assessments"
         ]
         
-        # Relevant sources for maritime news
+        # Relevant sources for maritime news - industry publications
         self.sources = [
-            "reuters",
-            "bloomberg", 
-            "financial-times",
-            "the-wall-street-journal"
+            "tradewinds",
+            "lloyds-list"
         ]
 
     def create_article_id(self, article):
         """Create unique ID for article based on title and URL"""
         content = f"{article.get('title', '')}{article.get('url', '')}"
         return hashlib.md5(content.encode('utf-8')).hexdigest()
+
+    def determine_country(self, article):
+        """Determine geographic focus from article content"""
+        title = article.get('title', '').lower()
+        description = article.get('description', '').lower()
+        content = title + ' ' + description
+        
+        # Country/region keywords for shipping markets
+        country_keywords = {
+            'China': ['china', 'chinese', 'beijing', 'shanghai', 'qingdao', 'dalian'],
+            'Australia': ['australia', 'australian', 'pilbara', 'port hedland', 'newcastle'],
+            'Brazil': ['brazil', 'brazilian', 'vale', 'tubarao', 'itaqui'],
+            'India': ['india', 'indian', 'paradip', 'vizag', 'mumbai'],
+            'USA': ['united states', 'america', 'american', 'new orleans', 'norfolk'],
+            'Russia': ['russia', 'russian', 'murmansk', 'novorossiysk'],
+            'Ukraine': ['ukraine', 'ukrainian', 'odesa', 'mariupol'],
+            'Singapore': ['singapore', 'singaporean'],
+            'Japan': ['japan', 'japanese', 'tokyo'],
+            'South Korea': ['south korea', 'korean', 'busan'],
+            'Indonesia': ['indonesia', 'indonesian', 'jakarta'],
+            'Turkey': ['turkey', 'turkish', 'istanbul'],
+            'Egypt': ['egypt', 'egyptian', 'suez'],
+            'Panama': ['panama', 'panamanian'],
+            'South Africa': ['south africa', 'south african', 'durban', 'cape town'],
+            'Norway': ['norway', 'norwegian', 'oslo'],
+            'Greece': ['greece', 'greek', 'piraeus'],
+            'Germany': ['germany', 'german', 'hamburg'],
+            'UK': ['united kingdom', 'britain', 'british', 'london'],
+            'Global': ['global', 'worldwide', 'international']
+        }
+        
+        for country, keywords in country_keywords.items():
+            if any(keyword in content for keyword in keywords):
+                return country
+        
+        return 'Unknown'
+
+    def determine_article_type(self, article):
+        """Determine article type from title and source"""
+        title = article.get('title', '').lower()
+        source = article.get('source', {}).get('name', '').lower()
+        description = article.get('description', '').lower()
+        
+        # Opinion/analysis indicators
+        opinion_indicators = ['opinion', 'comment', 'analysis', 'outlook', 'view', 'perspective', 
+                            'editorial', 'column', 'insight', 'forecast', 'prediction']
+        
+        # News indicators
+        news_indicators = ['reports', 'announces', 'says', 'states', 'confirms', 'reveals', 
+                          'breaking', 'update', 'latest']
+        
+        # Market report indicators  
+        market_indicators = ['market', 'rates', 'index', 'prices', 'trading', 'assessment',
+                           'weekly', 'daily', 'monthly', 'report']
+        
+        content = title + ' ' + description
+        
+        if any(indicator in content for indicator in opinion_indicators):
+            return 'Analysis/Opinion'
+        elif any(indicator in content for indicator in market_indicators):
+            return 'Market Report'
+        elif any(indicator in content for indicator in news_indicators):
+            return 'News'
+        else:
+            # Default categorisation based on source
+            if 'bloomberg' in source or 'reuters' in source:
+                return 'News'
+            elif 'times' in source or 'journal' in source:
+                return 'News'
+            else:
+                return 'News'
 
     def process_article(self, article, keyword):
         """Process article to match RSS feed structure"""
@@ -130,6 +199,8 @@ class MaritimeNewsScraper:
             'category': keyword,  # Use search keyword as category
             'description': article.get('description', ''),
             'source': article.get('source', {}).get('name', ''),
+            'country': self.determine_country(article),
+            'article_type': self.determine_article_type(article),
             'scrape_timestamp': datetime.utcnow().isoformat() + 'Z'
         }
         return processed
@@ -256,6 +327,8 @@ class MaritimeNewsScraper:
             logger.info(f"Date range: {df['pubdate'].min()} to {df['pubdate'].max()}")
             logger.info(f"Top sources: {df['source'].value_counts().head().to_dict()}")
             logger.info(f"Top categories: {df['category'].value_counts().head().to_dict()}")
+            logger.info(f"Countries: {df['country'].value_counts().head().to_dict()}")
+            logger.info(f"Article types: {df['article_type'].value_counts().to_dict()}")
             
             # Show UTC scrape timestamp
             logger.info(f"Scraped at: {articles[0]['scrape_timestamp']} (UTC)")
